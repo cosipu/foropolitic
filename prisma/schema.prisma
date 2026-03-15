@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Thread {
+  id        Int      @id @default(autoincrement())
+  subject   String   @db.VarChar(120)
+  createdAt DateTime @default(now())
+  bumpedAt  DateTime @default(now())
+  posts     Post[]
+
+  @@index([bumpedAt])
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  threadId  Int
+  replyToId Int?
+  subject   String?  @db.VarChar(120)
+  content   String   @db.Text
+  isOp      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  replyTo   Post?    @relation("ReplyChain", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Post[]   @relation("ReplyChain")
+
+  @@index([threadId, createdAt])
+  @@index([replyToId])
+}

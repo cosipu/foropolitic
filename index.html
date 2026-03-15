@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow,noarchive,nosnippet" />
+    <meta name="forum-api-base" content="" />
+    <title>ForoPolitic</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="wrapper">
+      <h1>ForoPolitic</h1>
+      <p class="forum-intro">
+        Foro anónimo tipo imageboard con arquitectura static-first. En GitHub Pages funciona con
+        almacenamiento local; cuando hay backend disponible, cambia automáticamente a API REST.
+      </p>
+
+      <div class="record" id="forum-mode-banner">Inicializando foro...</div>
+
+      <hr class="separator" />
+
+      <section class="filter-bar" aria-label="Acciones del foro">
+        <div class="filter-field forum-field-grow">
+          <span class="filter-label">Estado</span>
+          <input class="filter-input" id="forum-status" type="text" value="Cargando..." readonly />
+        </div>
+        <button class="filter-button" id="toggle-thread-form" type="button">Crear nuevo hilo</button>
+        <button class="filter-button" id="refresh-threads" type="button">Actualizar</button>
+      </section>
+
+      <section class="forum-panel is-hidden" id="thread-form-panel" aria-labelledby="thread-form-title">
+        <h2 id="thread-form-title">Abrir hilo</h2>
+        <form id="thread-form" class="forum-form">
+          <div class="filter-field">
+            <label class="filter-label" for="thread-title">Título del hilo</label>
+            <input class="filter-input" id="thread-title" name="title" type="text" maxlength="80" required />
+          </div>
+          <div class="filter-field forum-field-grow">
+            <label class="filter-label" for="thread-body">Mensaje inicial</label>
+            <textarea class="filter-input forum-textarea" id="thread-body" name="body" maxlength="1500" required></textarea>
+          </div>
+          <div class="section-action">
+            <button class="filter-button" type="submit">Publicar hilo</button>
+          </div>
+          <p class="forum-feedback" id="thread-form-feedback" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section aria-labelledby="thread-list-title">
+        <h2 id="thread-list-title">Hilos activos</h2>
+        <div class="news-grid" id="thread-list"></div>
+      </section>
+
+      <hr class="separator" />
+
+      <section id="thread-detail-section" aria-labelledby="thread-detail-title">
+        <h2 id="thread-detail-title">Detalle del hilo</h2>
+        <div class="news-empty" id="thread-empty-state">
+          Selecciona un hilo para ver respuestas y publicar comentarios.
+        </div>
+        <div id="thread-detail" class="forum-thread-detail"></div>
+      </section>
+    </main>
+
+    <noscript>
+      <div class="wrapper">
+        <p class="news-empty">Este foro necesita JavaScript para operar en modo estático o conectado a API.</p>
+      </div>
+    </noscript>
+
+    <script src="./main.js" defer></script>
+  </body>
+</html>
