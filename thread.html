@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow,noarchive,nosnippet" />
     <meta name="forum-api-base" content="" />
-    <title>ForoPolitic</title>
+    <title>Hilo · ForoPolitic</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
   </head>
@@ -71,43 +71,43 @@
     <main class="wrapper">
       <h1>ForoPolitic</h1>
       <p class="forum-intro">
-        Espacio de discusión anónima con enfoque en discreción y contenido relevante.
+        Vista detallada del hilo con respuestas anónimas en tiempo real.
       </p>
 
       <div class="record" id="forum-mode-banner">cirkast</div>
 
       <hr class="separator" />
 
-      <section class="filter-bar" aria-label="Acciones del foro">
+      <section class="filter-bar forum-page-actions" aria-label="Acciones del hilo">
         <div class="filter-field forum-field-grow">
           <span class="filter-label">Estado</span>
           <input class="filter-input" id="forum-status" type="text" value="Listo" readonly />
         </div>
-        <button class="filter-button" id="toggle-thread-form" type="button">Crear nuevo hilo</button>
-        <button class="filter-button" id="refresh-threads" type="button">Actualizar</button>
+        <a class="filter-button" href="./index.html">Volver al listado</a>
+        <button class="filter-button" id="refresh-thread" type="button">Actualizar hilo</button>
       </section>
 
-      <section class="forum-panel is-hidden" id="thread-form-panel" aria-labelledby="thread-form-title">
-        <h2 id="thread-form-title">Abrir hilo</h2>
-        <form id="thread-form" class="forum-form">
-          <div class="filter-field">
-            <label class="filter-label" for="thread-title">Título del hilo</label>
-            <input class="filter-input" id="thread-title" name="title" type="text" maxlength="80" required />
-          </div>
+      <section id="thread-view" class="forum-thread-detail" aria-labelledby="thread-title">
+        <div class="news-empty" id="thread-empty-state">Cargando hilo...</div>
+      </section>
+
+      <section class="forum-panel is-hidden" id="reply-panel" aria-labelledby="reply-form-title">
+        <h2 id="reply-form-title">Responder hilo</h2>
+        <p class="forum-inline-note">Las publicaciones se muestran sin identificación de usuario.</p>
+        <form id="reply-form" class="forum-form">
           <div class="filter-field forum-field-grow">
-            <label class="filter-label" for="thread-body">Mensaje inicial</label>
-            <textarea class="filter-input forum-textarea" id="thread-body" name="body" maxlength="1500" required></textarea>
+            <label class="filter-label" for="reply-body">Respuesta</label>
+            <textarea class="filter-input forum-textarea" id="reply-body" name="body" maxlength="1500" required></textarea>
+          </div>
+          <div class="filter-field">
+            <label class="filter-label" for="reply-target">Referencia opcional</label>
+            <input class="filter-input" id="reply-target" name="replyToId" type="text" placeholder="ID del post" />
           </div>
           <div class="section-action">
-            <button class="filter-button" type="submit">Publicar hilo</button>
+            <button class="filter-button" type="submit">Responder</button>
           </div>
-          <p class="forum-feedback" id="thread-form-feedback" aria-live="polite"></p>
+          <p class="forum-feedback" id="reply-form-feedback" aria-live="polite"></p>
         </form>
-      </section>
-
-      <section aria-labelledby="thread-list-title">
-        <h2 id="thread-list-title">Hilos activos</h2>
-        <div class="news-grid" id="thread-list"></div>
       </section>
     </main>
 
@@ -118,6 +118,6 @@
     </noscript>
 
     <script src="./privacy-modal.js" defer></script>
-    <script src="./main.js" defer></script>
+    <script src="./thread.js" defer></script>
   </body>
 </html>

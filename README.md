@@ -66,7 +66,8 @@ Para evitar conflictos con bases locales anteriores, el ejemplo del backend apun
 - Ordena por actividad reciente.
 - Limita longitud de título y mensaje.
 - Escapa contenido al renderizar para evitar XSS.
-- Usa `Anonymous` como autor fijo.
+- Usa `Ignoto` como autor fijo.
+- Muestra un aviso de privacidad bloqueante una sola vez por sesión antes de interactuar.
 
 ### Configurar API remota desde GitHub Pages
 

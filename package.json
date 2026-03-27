@@ -4,11 +4,18 @@
   "private": true,
   "description": "Workspace helper para el foro imageboard static-first.",
   "scripts": {
-    "postinstall": "npm --prefix backend install",
+    "postinstall": "node -e \"console.log('Skipping root postinstall. Install backend deps manually with: npm --prefix backend install')\"",
+    "build": "node -e \"const{mkdirSync,copyFileSync}=require('fs');mkdirSync('dist',{recursive:true});['index.html','thread.html','main.js','thread.js','style.css','robots.txt','.nojekyll'].forEach(f=>{try{copyFileSync(f,'dist/'+f)}catch(e){console.warn('skip',f)}})\"",
+    "deploy": "npx wrangler deploy",
+    "deploy:cf": "npm run build && npx wrangler deploy",
+    "setup:backend": "npm --prefix backend install",
     "dev": "npm --prefix backend run dev",
     "start": "npm --prefix backend run start",
     "db:migrate": "npm --prefix backend run db:migrate",
     "prisma:generate": "npm --prefix backend run prisma:generate",
     "db:studio": "npm --prefix backend run db:studio"
+  },
+  "devDependencies": {
+    "wrangler": "^4.73.0"
   }
 }

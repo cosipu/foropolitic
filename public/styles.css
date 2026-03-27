@@ -369,3 +369,120 @@ textarea {
     padding-left: 0;
   }
 }
+
+body.privacy-modal-open {
+  overflow: hidden;
+}
+
+.privacy-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.privacy-modal.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.privacy-modal.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.privacy-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(22, 18, 12, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.privacy-modal__dialog {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: min(88vh, 920px);
+  overflow-y: auto;
+  padding: 1.4rem;
+  border: 1px solid rgba(34, 48, 25, 0.18);
+  background: rgba(255, 249, 238, 0.96);
+  box-shadow: 0 28px 90px rgba(31, 22, 12, 0.25);
+  transform: translateY(18px);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.privacy-modal.is-visible .privacy-modal__dialog {
+  transform: translateY(0);
+}
+
+.privacy-modal__eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--accent-strong);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.privacy-modal__lead,
+.privacy-modal__footnote {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+
+.privacy-modal__content {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.25rem 0;
+}
+
+.privacy-modal__content section {
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(34, 48, 25, 0.14);
+  background: rgba(255, 252, 246, 0.92);
+}
+
+.privacy-modal__content h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+}
+
+.privacy-modal__content ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  line-height: 1.6;
+}
+
+.privacy-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.privacy-modal__button {
+  min-width: 220px;
+  padding: 0.8rem 1.2rem;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: #f4efdf;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .privacy-modal__dialog {
+    padding: 1.1rem;
+  }
+
+  .privacy-modal__actions {
+    justify-content: stretch;
+  }
+
+  .privacy-modal__button {
+    width: 100%;
+  }
+}

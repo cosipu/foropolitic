@@ -6,7 +6,7 @@ function renderThreadForm({ challengeQuestion, basePath }) {
       <div>
         <p class="eyebrow">Foro privado</p>
         <h1>ForoPolitic</h1>
-        <p class="lede">Imageboard anonimo, sin registro, con hilos ordenados por actividad reciente y moderacion minima por clave.</p>
+        <p class="lede">Imageboard anonimo, sin registro, con hilos ordenados por actividad reciente y publicaciones firmadas siempre como Ignoto.</p>
         <p class="privacy-note">Privacidad aplicada en la app: sin cuentas, sin perfiles, sin trackers y con bloqueo para indexacion. Para mantener el acceso realmente privado, define un path secreto en la variable <strong>PRIVATE_BASE_PATH</strong>.</p>
       </div>
 
@@ -39,7 +39,7 @@ function renderPost(post, { showReplyButton = true, compact = false }) {
     <article class="post-card ${post.isOp ? "op-post" : "reply-post"} ${compact ? "compact-post" : ""}" id="p${post.id}">
       <header class="post-meta">
         <div>
-          <strong class="author">Anónimo</strong>
+          <strong class="author">Ignoto</strong>
           ${post.subject ? `<span class="subject">${escapeHtml(post.subject)}</span>` : ""}
           ${replyBadge}
         </div>
@@ -95,6 +95,7 @@ function renderReplyForm({ threadId, challengeQuestion, basePath }) {
   return `
     <form class="post-form sticky-form" method="post" action="${basePath}/api/threads/${threadId}/posts" data-async-form>
       <h2>Responder</h2>
+      <p class="privacy-note">Todas las publicaciones aparecen con el nombre Ignoto. No compartas datos que puedan identificarte.</p>
       <input type="hidden" name="replyToId" value="" data-reply-input />
       <label>
         <span>Mensaje</span>

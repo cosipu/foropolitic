@@ -1,3 +1,91 @@
+const PRIVACY_STORAGE_KEY = "foropolitic.privacy.notice.v1";
+const privacyWaiters = [];
+let privacyInitialized = false;
+
+function getPrivacyElements() {
+  return {
+    modal: document.getElementById("privacy-modal"),
+    acceptButton: document.getElementById("privacy-modal-accept")
+  };
+}
+
+function hasAcceptedPrivacyNotice() {
+  try {
+    return window.sessionStorage.getItem(PRIVACY_STORAGE_KEY) === "accepted";
+  } catch (error) {
+    return false;
+  }
+}
+
+function markPrivacyNoticeAccepted() {
+  try {
+    window.sessionStorage.setItem(PRIVACY_STORAGE_KEY, "accepted");
+  } catch (error) {
+    return;
+  }
+}
+
+function setPrivacyModalVisibility(isVisible) {
+  const { modal, acceptButton } = getPrivacyElements();
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.toggle("is-hidden", !isVisible);
+  modal.classList.toggle("is-visible", isVisible);
+  modal.setAttribute("aria-hidden", String(!isVisible));
+  document.body.classList.toggle("privacy-modal-open", isVisible);
+
+  if (isVisible) {
+    window.requestAnimationFrame(() => {
+      acceptButton?.focus();
+    });
+  }
+}
+
+function initializePrivacyModal() {
+  if (privacyInitialized) {
+    return;
+  }
+
+  const { acceptButton } = getPrivacyElements();
+  if (!acceptButton) {
+    return;
+  }
+
+  // El aviso se confirma una sola vez por sesión y libera cualquier envío pendiente.
+  acceptButton.addEventListener("click", () => {
+    markPrivacyNoticeAccepted();
+    setPrivacyModalVisibility(false);
+
+    while (privacyWaiters.length > 0) {
+      const resolve = privacyWaiters.shift();
+      resolve(true);
+    }
+  });
+
+  privacyInitialized = true;
+}
+
+function ensurePrivacyNoticeAccepted() {
+  initializePrivacyModal();
+
+  if (hasAcceptedPrivacyNotice()) {
+    return Promise.resolve(true);
+  }
+
+  const { modal } = getPrivacyElements();
+  if (!modal) {
+    return Promise.resolve(true);
+  }
+
+  // Los formularios esperan esta promesa antes de enviar contenido al backend.
+  setPrivacyModalVisibility(true);
+  return new Promise((resolve) => {
+    privacyWaiters.push(resolve);
+  });
+}
+
 function getFormStatusElement(form) {
   return form.querySelector(".form-status");
 }
@@ -26,6 +114,11 @@ function updateChallengeText(scope, challengeQuestion) {
 async function submitAsyncForm(event) {
   const form = event.target;
   event.preventDefault();
+
+  const privacyAccepted = await ensurePrivacyNoticeAccepted();
+  if (!privacyAccepted) {
+    return;
+  }
 
   const submitButton = form.querySelector("button[type='submit']");
   const formData = new FormData(form);
@@ -149,6 +242,11 @@ function attachDeleteButtons() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initializePrivacyModal();
+  if (!hasAcceptedPrivacyNotice()) {
+    void ensurePrivacyNoticeAccepted();
+  }
+
   document.querySelectorAll("form[data-async-form]").forEach((form) => {
     form.addEventListener("submit", submitAsyncForm);
   });

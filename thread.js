@@ -1,27 +1,25 @@
-(function bootstrapForum() {
+(function bootstrapThreadView() {
   const AUTHOR_NAME = "Ignoto";
-  const THREAD_TITLE_LIMIT = 80;
   const POST_BODY_LIMIT = 1500;
-  const THREAD_PREVIEW_LIMIT = 120;
   const STORAGE_KEY = "foropolitic.static.threads.v1";
 
   const elements = {
     banner: document.getElementById("forum-mode-banner"),
     status: document.getElementById("forum-status"),
-    toggleThreadForm: document.getElementById("toggle-thread-form"),
-    refreshThreads: document.getElementById("refresh-threads"),
-    threadFormPanel: document.getElementById("thread-form-panel"),
-    threadForm: document.getElementById("thread-form"),
-    threadFormFeedback: document.getElementById("thread-form-feedback"),
-    threadList: document.getElementById("thread-list")
+    refreshThread: document.getElementById("refresh-thread"),
+    threadView: document.getElementById("thread-view"),
+    threadEmptyState: document.getElementById("thread-empty-state"),
+    replyPanel: document.getElementById("reply-panel"),
+    replyForm: document.getElementById("reply-form"),
+    replyFormFeedback: document.getElementById("reply-form-feedback")
   };
 
   const state = {
     mode: "loading",
     service: null,
-    threads: [],
+    threadId: null,
     serverConnected: false,
-    composerOpen: false
+    thread: null
   };
 
   function escapeHtml(value) {
@@ -73,62 +71,47 @@
   }
 
   function buildApiUrl(path) {
-    const apiBase = getApiBase();
-    return `${apiBase}${path}`;
-  }
-
-  function buildThreadUrl(threadId) {
-    return `./thread.html?id=${encodeURIComponent(threadId)}`;
+    return `${getApiBase()}${path}`;
   }
 
   function sortThreads(threads) {
     return [...threads].sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt));
   }
 
-  function getInitialBody(thread) {
-    return thread?.initialPost?.body || thread?.body || "";
-  }
-
-  function getReplyCount(thread) {
-    if (Number.isInteger(thread?.replyCount)) {
-      return thread.replyCount;
-    }
-
-    return Array.isArray(thread?.replies) ? thread.replies.length : 0;
-  }
-
-  function createPreview(value) {
-    const trimmedValue = String(value || "").trim();
-    if (trimmedValue.length <= THREAD_PREVIEW_LIMIT) {
-      return trimmedValue;
-    }
-
-    return `${trimmedValue.slice(0, THREAD_PREVIEW_LIMIT).trimEnd()}...`;
-  }
-
-  function normalizePost(post, fallback) {
-    return {
-      ...fallback,
-      ...post,
-      author: AUTHOR_NAME
-    };
-  }
-
   function normalizeThread(thread) {
-    const initialPost = normalizePost(thread.initialPost || {}, {
-      id: thread.initialPost?.id || thread.id,
+    if (!thread) {
+      return null;
+    }
+
+    const initialPost = thread.initialPost || {
+      id: thread.id,
       threadId: thread.id,
+      author: AUTHOR_NAME,
       body: thread.body || "",
       createdAt: thread.createdAt,
       isOp: true,
       replyToId: null
-    });
+    };
 
     return {
-      ...thread,
-      initialPost,
+      id: thread.id,
+      title: thread.title,
+      createdAt: thread.createdAt || initialPost.createdAt,
+      updatedAt: thread.updatedAt || thread.createdAt || initialPost.createdAt,
+      replyCount: Number.isInteger(thread.replyCount)
+        ? thread.replyCount
+        : Array.isArray(thread.replies)
+          ? thread.replies.length
+          : 0,
+      initialPost: {
+        ...initialPost,
+        author: AUTHOR_NAME
+      },
       replies: Array.isArray(thread.replies)
-        ? thread.replies.map((reply) => normalizePost(reply, { threadId: thread.id, isOp: false }))
+        ? thread.replies.map((reply) => ({
+            ...reply,
+            author: AUTHOR_NAME
+          }))
         : []
     };
   }
@@ -139,7 +122,7 @@
     readThreads() {
       try {
         const rawValue = localStorage.getItem(STORAGE_KEY);
-        return rawValue ? JSON.parse(rawValue).map(normalizeThread) : [];
+        return rawValue ? JSON.parse(rawValue) : [];
       } catch (error) {
         return [];
       }
@@ -154,39 +137,12 @@
     }
 
     async getThread(threadId) {
-      return this.readThreads().find((thread) => thread.id === threadId) || null;
-    }
-
-    async createThread(payload) {
-      const threads = this.readThreads();
-      const now = new Date().toISOString();
-      const threadId = crypto.randomUUID();
-      const newThread = {
-        id: threadId,
-        title: payload.title,
-        createdAt: now,
-        updatedAt: now,
-        replyCount: 0,
-        initialPost: {
-          id: crypto.randomUUID(),
-          threadId,
-          author: AUTHOR_NAME,
-          body: payload.body,
-          createdAt: now,
-          isOp: true,
-          replyToId: null
-        },
-        replies: []
-      };
-
-      threads.push(newThread);
-      this.writeThreads(threads);
-      return newThread;
+      return normalizeThread(this.readThreads().find((thread) => String(thread.id) === String(threadId)) || null);
     }
 
     async createReply(threadId, payload) {
       const threads = this.readThreads();
-      const threadIndex = threads.findIndex((thread) => thread.id === threadId);
+      const threadIndex = threads.findIndex((thread) => String(thread.id) === String(threadId));
 
       if (threadIndex === -1) {
         throw new Error("THREAD_NOT_FOUND");
@@ -195,7 +151,7 @@
       const now = new Date().toISOString();
       const reply = {
         id: crypto.randomUUID(),
-        threadId,
+        threadId: threads[threadIndex].id,
         author: AUTHOR_NAME,
         body: payload.body,
         createdAt: now,
@@ -241,16 +197,7 @@
 
     async getThread(threadId) {
       const payload = await this.request(`/threads/${threadId}`);
-      return payload.thread;
-    }
-
-    async createThread(payload) {
-      const result = await this.request("/threads", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-
-      return result.thread;
+      return normalizeThread(payload.thread);
     }
 
     async createReply(threadId, payload) {
@@ -298,52 +245,78 @@
     elements.banner.textContent = message;
   }
 
-  function toggleComposer(forceValue) {
-    state.composerOpen = typeof forceValue === "boolean" ? forceValue : !state.composerOpen;
-    elements.threadFormPanel.classList.toggle("is-hidden", !state.composerOpen);
+  function showThreadError(message) {
+    document.title = "Hilo no encontrado · ForoPolitic";
+    elements.threadView.innerHTML = `<div class="news-empty">${escapeHtml(message)}</div>`;
+    elements.threadEmptyState?.classList.remove("is-hidden");
+    elements.replyPanel.classList.add("is-hidden");
   }
 
-  function renderThreadList() {
-    if (state.threads.length === 0) {
-      elements.threadList.innerHTML = '<div class="news-empty">Todavía no hay hilos publicados.</div>';
+  function renderThread() {
+    if (!state.thread) {
+      showThreadError("No se encontro el hilo solicitado.");
       return;
     }
 
-    elements.threadList.innerHTML = state.threads
-      .map((thread) => {
-        const preview = escapeHtml(createPreview(getInitialBody(thread)));
-        const replyCount = getReplyCount(thread);
-        return `
-          <article class="news-card">
-            <div class="thread-card-header">
-              <div>
-                <span class="news-date">${formatDate(thread.updatedAt)}</span>
-                <h3 class="news-title">${escapeHtml(thread.title)}</h3>
-              </div>
-              <span class="thread-count">${replyCount} respuestas</span>
-            </div>
-            <p class="news-description thread-preview">${preview}</p>
-            <p class="forum-inline-note">Publicado por ${AUTHOR_NAME} · ${formatDate(thread.createdAt)}</p>
-            <div class="thread-actions">
-              <a class="filter-button" href="${buildThreadUrl(thread.id)}">Ver hilo</a>
-            </div>
-          </article>`;
-      })
-      .join("");
+    const thread = normalizeThread(state.thread);
+    const repliesMarkup = thread.replies.length > 0
+      ? thread.replies
+          .map((reply) => {
+            const replyTarget = reply.replyToId
+              ? `<div class="reply-target">Respuesta a &gt;&gt;${escapeHtml(reply.replyToId)}</div>`
+              : "";
+
+            return `
+              <article class="news-card reply-card">
+                <div class="reply-card-header">
+                  <span class="news-date">${formatDate(reply.createdAt)}</span>
+                  <span class="forum-meta">${AUTHOR_NAME} · No.${escapeHtml(reply.id)}</span>
+                </div>
+                ${replyTarget}
+                <p class="news-description reply-body">${escapeHtml(reply.body)}</p>
+                <div class="detail-actions">
+                  <button class="filter-button" type="button" data-reply-target="${reply.id}">Citar</button>
+                </div>
+              </article>`;
+          })
+          .join("")
+      : '<div class="news-empty">Este hilo todavia no tiene respuestas.</div>';
+
+    document.title = `${thread.title} · ForoPolitic`;
+    elements.threadView.innerHTML = `
+      <article class="forum-panel">
+        <div class="thread-detail-header">
+          <div>
+            <span class="news-date">${formatDate(thread.updatedAt)}</span>
+            <h2 id="thread-title" class="news-title">${escapeHtml(thread.title)}</h2>
+          </div>
+          <span class="thread-count">${thread.replyCount} respuestas</span>
+        </div>
+        <p class="thread-detail-body">${escapeHtml(thread.initialPost.body)}</p>
+        <p class="forum-inline-note">Publicado por ${AUTHOR_NAME} · ${formatDate(thread.createdAt)} · No.${escapeHtml(thread.initialPost.id)}</p>
+      </article>
+      <section class="forum-replies">${repliesMarkup}</section>`;
+
+    elements.replyPanel.classList.remove("is-hidden");
   }
 
-  async function refreshThreads() {
+  async function refreshThread() {
+    if (!state.threadId) {
+      showThreadError("Falta el identificador del hilo en la URL.");
+      return;
+    }
+
     try {
-      state.threads = sortThreads(await state.service.listThreads());
+      state.thread = await state.service.getThread(state.threadId);
       setConnectionStatus(state.mode === "api");
-      renderThreadList();
+      renderThread();
     } catch (error) {
       setConnectionStatus(false);
-      throw error;
+      showThreadError(error.message || "No se pudo cargar el hilo.");
     }
   }
 
-  async function handleCreateThread(event) {
+  async function handleReplySubmit(event) {
     event.preventDefault();
 
     const privacyAccepted = await window.ForoPrivacy?.ensureAccepted();
@@ -351,61 +324,67 @@
       return;
     }
 
-    const title = sanitizeText(elements.threadForm.title.value, THREAD_TITLE_LIMIT);
-    const body = sanitizeBody(elements.threadForm.body.value);
+    const body = sanitizeBody(elements.replyForm.body.value);
+    const replyToId = sanitizeText(elements.replyForm.replyToId.value, 64);
 
-    if (title.length < 3) {
-      setFeedback(elements.threadFormFeedback, "El título debe tener al menos 3 caracteres.", true);
-      return;
-    }
-
-    if (body.length < 3) {
-      setFeedback(elements.threadFormFeedback, "El mensaje inicial debe tener al menos 3 caracteres.", true);
+    if (body.length < 2) {
+      setFeedback(elements.replyFormFeedback, "La respuesta debe tener al menos 2 caracteres.", true);
       return;
     }
 
     try {
-      const thread = await state.service.createThread({ title, body });
-      elements.threadForm.reset();
-      setFeedback(elements.threadFormFeedback, "Hilo publicado.", false);
+      await state.service.createReply(state.threadId, {
+        body,
+        replyToId: replyToId || null
+      });
+
+      elements.replyForm.reset();
       setConnectionStatus(state.mode === "api");
-      await refreshThreads();
-      toggleComposer(false);
-      window.location.href = buildThreadUrl(thread.id);
+      setFeedback(elements.replyFormFeedback, "Respuesta publicada.", false);
+      await refreshThread();
     } catch (error) {
       setConnectionStatus(false);
-      setFeedback(elements.threadFormFeedback, error.message || "No se pudo crear el hilo.", true);
+      setFeedback(elements.replyFormFeedback, error.message || "No se pudo publicar la respuesta.", true);
     }
+  }
+
+  function handleThreadViewClick(event) {
+    const quoteButton = event.target.closest("[data-reply-target]");
+    if (!quoteButton) {
+      return;
+    }
+
+    const targetId = quoteButton.getAttribute("data-reply-target");
+    if (!targetId) {
+      return;
+    }
+
+    elements.replyForm.replyToId.value = targetId;
+    elements.replyForm.body.focus();
   }
 
   async function initialize() {
+    state.threadId = new URLSearchParams(window.location.search).get("id");
     state.service = await detectService();
     updateModeBanner();
     window.ForoPrivacy?.promptIfNeeded();
-    await refreshThreads();
+    await refreshThread();
   }
 
-  elements.toggleThreadForm.addEventListener("click", () => {
-    toggleComposer();
+  elements.refreshThread.addEventListener("click", async () => {
+    await refreshThread();
   });
 
-  elements.refreshThreads.addEventListener("click", async () => {
-    try {
-      await refreshThreads();
-    } catch (error) {
-      setFeedback(elements.threadFormFeedback, "No hay conexión con el servidor en este momento.", true);
-    }
-  });
-
-  elements.threadForm.addEventListener("submit", handleCreateThread);
+  elements.replyForm.addEventListener("submit", handleReplySubmit);
+  elements.threadView.addEventListener("click", handleThreadViewClick);
 
   initialize().catch((error) => {
     state.mode = "local";
     state.service = new LocalForumService();
     updateModeBanner();
     setConnectionStatus(false);
-    setFeedback(elements.threadFormFeedback, "No se pudo inicializar el foro.", true);
-    refreshThreads().catch(() => {});
+    setFeedback(elements.replyFormFeedback, "No se pudo inicializar el hilo.", true);
+    refreshThread().catch(() => {});
     console.error(error);
   });
 })();
